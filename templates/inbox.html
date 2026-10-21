@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ folder }} - Gmail{% endblock %}
+
+{% block content %}
+<div class="gm-toolbar">
+    <label class="gm-checkbox">
+        <input type="checkbox" id="selectAll">
+        <span></span>
+    </label>
+    <button class="gm-tool-btn" title="Refresh">⟳</button>
+    <button class="gm-tool-btn" title="More">⋮</button>
+
+    <div class="gm-toolbar-right">
+        <span class="gm-page-info">1–{{ emails|length }} of {{ emails|length }}</span>
+        <button class="gm-tool-btn" title="Newer">‹</button>
+        <button class="gm-tool-btn" title="Older">›</button>
+    </div>
+</div>
+
+<div class="gm-mail-list">
+    {% if emails %}
+        {% for email in emails %}
+        {% set r = recips[loop.index0] %}
+        <div class="gm-row {% if not r.is_read and active == 'inbox' %}unread{% endif %}"
+             data-email-id="{{ email.id }}">
+
+            <label class="gm-checkbox gm-row-check" onclick="event.stopPropagation()">
+                <input type="checkbox" class="row-select" data-id="{{ email.id }}">
+                <span></span>
+            </label>
+
+            <button type="button"
+                    class="gm-star-btn {% if r.is_starred %}on{% endif %}"
+                    data-id="{{ email.id }}"
+                    title="Star">{% if r.is_starred %}★{% else %}☆{% endif %}</button>
+
+            <button type="button"
+                    class="gm-important-btn {% if r.is_important %}on{% endif %}"
+                    data-id="{{ email.id }}"
+                    title="Mark as important">{% if r.is_important %}❯{% else %}❮{% endif %}</button>
+
+            <a href="{{ url_for('view_email', email_id=email.id) }}"
+               class="gm-row-link">
+                <span class="gm-row-sender">
+                    {% if active == 'sent' %}
+                        To: {{ email.recipients | selectattr('kind','in',['to','cc','bcc'])
+                                | map(attribute='user') | map(attribute='email') | join(', ') }}
+                    {% else %}
+                        {{ email.sender.username }}
+                    {% endif %}
+                </span>
+                <span class="gm-row-content">
+                    <span class="gm-row-subject">{{ email.subject }}</span>
+                    <span class="gm-row-snippet"> - {{ email.body[:110] }}{% if email.body|length > 110 %}…{% endif %}</span>
+                </span>
+            </a>
+
+            <div class="gm-row-actions">
+                <button class="gm-row-action" title="Archive" onclick="event.preventDefault();event.stopPropagation();">🗄</button>
+                <button class="gm-row-action" title="Delete"
+                        onclick="event.preventDefault();event.stopPropagation();trashMail({{ email.id }});">🗑</button>
+                <button class="gm-row-action" title="Mark as read"
+                        onclick="event.preventDefault();event.stopPropagation();">✉</button>
+                <button class="gm-row-action" title="Snooze"
+                        onclick="event.preventDefault();event.stopPropagation();">⏰</button>
+            </div>
+
+            <div class="gm-row-date">
+                {% set delta = (email.created_at.date() - (email.created_at.date())) %}
+                {% if email.created_at.date() == email.created_at.date() %}
+                    {{ email.created_at.strftime('%b %d') }}
+                {% else %}
+                    {{ email.created_at.strftime('%b %d') }}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="gm-empty">
+            <div class="gm-empty-icon">
+                {% if active == 'inbox' %}📥{% elif active == 'sent' %}📤{% elif active == 'starred' %}⭐{% else %}🗑️{% endif %}
+            </div>
+            <p>No conversations here.</p>
+        </div>
+    {% endif %}
+</div>
+
+<form id="trashForm" method="POST" style="display:none;">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function trashMail(id) {
+    const f = document.getElementById('trashForm');
+    f.action = '/email/' + id + '/trash';
+    f.submit();
+}
+
+// Star toggle (AJAX)
+document.querySelectorAll('.gm-star-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const res = await fetch('/email/' + id + '/star', {
+            method: 'POST',
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await res.json();
+        btn.textContent = data.starred ? '★' : '☆';
+        btn.classList.toggle('on', data.starred);
+    });
+});
+
+// Important toggle
+document.querySelectorAll('.gm-important-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const res = await fetch('/email/' + id + '/important', {
+            method: 'POST',
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await res.json();
+        btn.textContent = data.important ? '❯' : '❮';
+        btn.classList.toggle('on', data.important);
+    });
+});
+
+// Select all
+const selectAll = document.getElementById('selectAll');
+if (selectAll) {
+    selectAll.addEventListener('change', () => {
+        document.querySelectorAll('.row-select').forEach(cb => cb.checked = selectAll.checked);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Compose - Gmail{% endblock %}
+
+{% block content %}
+<div class="gm-compose-wrap">
+    <div class="gm-compose">
+        <div class="gm-compose-head">
+            <span class="gm-compose-title">
+                {% if prefill.in_reply_to %}Reply{% else %}New Message{% endif %}
+            </span>
+            <button class="gm-compose-close" onclick="window.location='{{ url_for('inbox') }}'">✕</button>
+        </div>
+
+        <form method="POST" id="composeForm">
+            <input type="hidden" name="in_reply_to" value="{{ prefill.in_reply_to or '' }}">
+            <input type="hidden" name="thread_id" value="{{ prefill.thread_id or '' }}">
+
+            <div class="gm-compose-row">
+                <input type="text" name="to" placeholder="Recipients"
+                       value="{{ prefill.to or '' }}" required autofocus autocomplete="off">
+                <div class="gm-compose-row-actions">
+                    <button type="button" class="gm-cm-btn" title="Cc" onclick="toggleField('ccRow')">Cc</button>
+                    <button type="button" class="gm-cm-btn" title="Bcc" onclick="toggleField('bccRow')">Bcc</button>
+                </div>
+            </div>
+
+            <div class="gm-compose-row hidden" id="ccRow">
+                <input type="text" name="cc" placeholder="Cc"
+                       value="{{ prefill.cc or '' }}" autocomplete="off">
+            </div>
+
+            <div class="gm-compose-row hidden" id="bccRow">
+                <input type="text" name="bcc" placeholder="Bcc"
+                       value="{{ prefill.bcc or '' }}" autocomplete="off">
+            </div>
+
+            <div class="gm-compose-row">
+                <input type="text" name="subject" placeholder="Subject"
+                       value="{{ prefill.subject or '' }}" autocomplete="off">
+            </div>
+
+            <textarea name="body" class="gm-compose-body" autocomplete="off">{{ prefill.body or '' }}</textarea>
+        </form>
+
+        <div class="gm-compose-foot">
+            <button type="submit" form="composeForm" class="gm-btn-send">
+                Send <span class="gm-send-caret">▾</span>
+            </button>
+
+            <div class="gm-compose-tools">
+                <button type="button" class="gm-tool-icon" title="Formatting">A</button>
+                <button type="button" class="gm-tool-icon" title="Attach">📎</button>
+                <button type="button" class="gm-tool-icon" title="Drive">🔺</button>
+                <button type="button" class="gm-tool-icon" title="Insert photo">🖼</button>
+                <button type="button" class="gm-tool-icon" title="Insert link">🔗</button>
+                <button type="button" class="gm-tool-icon" title="Emoji">☺</button>
+                <button type="button" class="gm-tool-icon" title="More">⋮</button>
+            </div>
+
+            <button type="button" class="gm-tool-icon gm-trash-compose" title="Discard"
+                    onclick="window.location='{{ url_for('inbox') }}'">🗑</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleField(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+</script>
+{% endblock %}

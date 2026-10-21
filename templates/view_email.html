@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ email.subject }} - Gmail{% endblock %}
+
+{% block content %}
+<div class="gm-view-wrap">
+    <!-- Thread toolbar -->
+    <div class="gm-view-toolbar">
+        <a href="{{ url_for('inbox') }}" class="gm-tool-btn" title="Back">←</a>
+        <form method="POST" action="{{ url_for('move_to_trash', email_id=email.id) }}"
+              style="display:inline">
+            <button type="submit" class="gm-tool-btn" title="Delete">🗑</button>
+        </form>
+        <button class="gm-tool-btn" title="Archive">🗄</button>
+        <button class="gm-tool-btn" title="Mark as spam">🚫</button>
+        <button class="gm-tool-btn" title="More">⋮</button>
+    </div>
+
+    <div class="gm-thread">
+        <h2 class="gm-thread-subject">{{ email.subject }}</h2>
+        {% if thread|length > 1 %}
+        <p class="gm-thread-count">{{ thread|length }} messages</p>
+        {% endif %}
+
+        {% for msg in thread %}
+        <div class="gm-thread-msg {% if msg.id == email.id %}current{% endif %}">
+            <div class="gm-msg-head">
+                <div class="gm-avatar mid">{{ msg.sender.username[0]|upper }}</div>
+
+                <div class="gm-msg-meta">
+                    <div class="gm-msg-from">
+                        <b>{{ msg.sender.username }}</b>
+                        <span class="gm-msg-email">&lt;{{ msg.sender.email }}&gt;</span>
+                    </div>
+                    <div class="gm-msg-to">
+                        to {{ msg.recipients | selectattr('kind','in',['to','cc','bcc'])
+                                | map(attribute='user') | map(attribute='email') | join(', ') }}
+                    </div>
+                </div>
+
+                <div class="gm-msg-actions">
+                    <button class="gm-tool-btn" title="Reply"
+                            onclick="window.location='{{ url_for('compose', reply_to=msg.id) }}'">↩</button>
+                    <button class="gm-tool-btn" title="More">⋮</button>
+                    <span class="gm-msg-date">
+                        {{ msg.created_at.strftime('%b %d, %Y, %I:%M %p') }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="gm-msg-body">
+                {{ msg.body|replace('\n', '<br>')|safe }}
+            </div>
+
+            {% if msg.id == email.id %}
+            <div class="gm-reply-bar">
+                <button class="gm-btn-outline" onclick="window.location='{{ url_for('compose', reply_to=email.id) }}'">↩ Reply</button>
+                <button class="gm-btn-outline" onclick="window.location='{{ url_for('compose', reply_all=email.id) }}'">↩↩ Reply all</button>
+                <button class="gm-btn-outline" onclick="window.location='{{ url_for('compose', forward=email.id) }}'">→ Forward</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

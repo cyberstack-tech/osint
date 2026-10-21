@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - TechnoValley Mail{% endblock %}
+
+{% block content %}
+<div class="dash-header">
+    <div>
+        <h1 class="dash-title">Welcome back, {{ current_user.username }} 👋</h1>
+        <p class="dash-subtitle">Here's what's happening in your mailbox today.</p>
+    </div>
+    <a href="{{ url_for('compose') }}" class="btn-primary">✏️ New Message</a>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stat-grid">
+    <a href="{{ url_for('inbox') }}" class="stat-card stat-blue">
+        <div class="stat-icon">📥</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ total_inbox }}</div>
+            <div class="stat-label">Total Inbox</div>
+        </div>
+    </a>
+    <a href="{{ url_for('inbox') }}" class="stat-card stat-red">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ unread_count }}</div>
+            <div class="stat-label">Unread</div>
+        </div>
+    </a>
+    <a href="{{ url_for('starred') }}" class="stat-card stat-amber">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ starred_count }}</div>
+            <div class="stat-label">Starred</div>
+        </div>
+    </a>
+    <a href="{{ url_for('sent') }}" class="stat-card stat-green">
+        <div class="stat-icon">📤</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ sent_count }}</div>
+            <div class="stat-label">Sent</div>
+        </div>
+    </a>
+</div>
+
+<!-- CHART + ACTIVITY -->
+<div class="dash-row">
+    <div class="dash-card chart-card">
+        <div class="card-head">
+            <h3>Activity (Last 7 days)</h3>
+            <div class="legend">
+                <span><i class="dot dot-blue"></i> Received</span>
+                <span><i class="dot dot-green"></i> Sent</span>
+            </div>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="activityChart" height="220"></canvas>
+        </div>
+    </div>
+
+    <div class="dash-card">
+        <div class="card-head">
+            <h3>Quick Actions</h3>
+        </div>
+        <div class="quick-actions">
+            <a href="{{ url_for('compose') }}" class="quick-action">
+                <span class="qa-icon qa-blue">✏️</span>
+                <div>
+                    <div class="qa-title">Compose Mail</div>
+                    <div class="qa-sub">Send a new message</div>
+                </div>
+            </a>
+            <a href="{{ url_for('inbox') }}" class="quick-action">
+                <span class="qa-icon qa-green">📥</span>
+                <div>
+                    <div class="qa-title">Open Inbox</div>
+                    <div class="qa-sub">{{ unread_count }} unread messages</div>
+                </div>
+            </a>
+            <a href="{{ url_for('starred') }}" class="quick-action">
+                <span class="qa-icon qa-amber">⭐</span>
+                <div>
+                    <div class="qa-title">Starred</div>
+                    <div class="qa-sub">{{ starred_count }} starred mails</div>
+                </div>
+            </a>
+            <a href="{{ url_for('trash') }}" class="quick-action">
+                <span class="qa-icon qa-red">🗑️</span>
+                <div>
+                    <div class="qa-title">Trash</div>
+                    <div class="qa-sub">{{ trash_count }} deleted</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- RECENT + STARRED -->
+<div class="dash-row">
+    <div class="dash-card">
+        <div class="card-head">
+            <h3>Recent Messages</h3>
+            <a href="{{ url_for('inbox') }}" class="card-link">View all →</a>
+        </div>
+        {% if recent_emails %}
+        <div class="mini-list">
+            {% for email in recent_emails %}
+            {% set r = recent_recips[loop.index0] %}
+            <a href="{{ url_for('view_email', email_id=email.id) }}"
+               class="mini-row {% if not r.is_read %}mini-unread{% endif %}">
+                <div class="avatar small">{{ email.sender.username[0]|upper }}</div>
+                <div class="mini-body">
+                    <div class="mini-sender">{{ email.sender.email }}</div>
+                    <div class="mini-subject">{{ email.subject }}</div>
+                </div>
+                <div class="mini-date">{{ email.created_at.strftime('%b %d') }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-mini">No messages yet. <a href="{{ url_for('compose') }}">Send your first mail →</a></div>
+        {% endif %}
+    </div>
+
+    <div class="dash-card">
+        <div class="card-head">
+            <h3>Starred</h3>
+            <a href="{{ url_for('starred') }}" class="card-link">View all →</a>
+        </div>
+        {% if starred_emails %}
+        <div class="mini-list">
+            {% for email in starred_emails %}
+            {% set r = starred_recips[loop.index0] %}
+            <a href="{{ url_for('view_email', email_id=email.id) }}" class="mini-row">
+                <div class="avatar small">⭐</div>
+                <div class="mini-body">
+                    <div class="mini-sender">{{ email.sender.email }}</div>
+                    <div class="mini-subject">{{ email.subject }}</div>
+                </div>
+                <div class="mini-date">{{ email.created_at.strftime('%b %d') }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-mini">No starred messages yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const ctx = document.getElementById('activityChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ activity_labels | tojson }},
+                datasets: [
+                    {
+                        label: 'Received',
+                        data: {{ activity_received | tojson }},
+                        borderColor: '#1a73e8',
+                        backgroundColor: 'rgba(26,115,232,0.12)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#1a73e8'
+                    },
+                    {
+                        label: 'Sent',
+                        data: {{ activity_sent | tojson }},
+                        borderColor: '#34a853',
+                        backgroundColor: 'rgba(52,168,83,0.12)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#34a853'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: '#5f6368' },
+                        grid: { color: '#eef1f5' }
+                    },
+                    x: {
+                        ticks: { color: '#5f6368' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

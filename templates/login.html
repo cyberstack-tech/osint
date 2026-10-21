@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sign in - Gmail{% endblock %}
+
+{% block auth_content %}
+<div class="gm-auth-page">
+    <div class="gm-auth-card">
+        <div class="gm-auth-logo">
+            <svg viewBox="0 0 24 24" width="44" height="44">
+                <path fill="#4285F4" d="M22 6v12a2 2 0 0 1-2 2h-1V9.5l-7 5.25L5 9.5V20H3a2 2 0 0 1-2-2V6a2 2 0 0 1 3.2-1.6L12 10.75 19.8 4.4A2 2 0 0 1 22 6z"/>
+                <path fill="#EA4335" d="M4 4.4v5.1L12 15l8-5.5V4.4L12 10.75 4 4.4z"/>
+                <path fill="#FBBC04" d="M3 20V9.5l1 .75V20H3z"/>
+                <path fill="#34A853" d="M20 20V10.25l1-.75V20h-1z"/>
+            </svg>
+            <h1>Sign in</h1>
+            <p>to continue to Gmail</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, msg in messages %}
+                <div class="gm-flash gm-flash-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" class="gm-auth-form">
+            <div class="gm-input-group">
+                <input type="text" id="email" name="email" placeholder=" " required autofocus>
+                <label for="email">Email or phone</label>
+            </div>
+            <div class="gm-input-group">
+                <input type="password" id="password" name="password" placeholder=" " required>
+                <label for="password">Enter your password</label>
+            </div>
+
+            <div class="gm-auth-actions">
+                <a href="{{ url_for('register') }}" class="gm-link-btn">Create account</a>
+                <button type="submit" class="gm-btn-primary">Next</button>
+            </div>
+        </form>
+
+        <p class="gm-auth-hint">Use your <b>@{{ domain }}</b> address</p>
+    </div>
+</div>
+{% endblock %}
