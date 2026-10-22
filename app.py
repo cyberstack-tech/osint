@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-MAIL_DOMAIN = "hacker.email"
+MAIL_DOMAIN = "hacker.mail"
 
 
 # ==================== MODELS ====================
