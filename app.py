@@ -161,7 +161,7 @@ def register():
             parts = email_input.split('@')
             username = parts[0]
             if parts[1] != MAIL_DOMAIN:
-                flash(f'Email must end with @{MAIL_DOMAIN}', 'error')
+                
                 return redirect(url_for('register'))
         else:
             username = email_input
